@@ -1,5 +1,6 @@
 # coding: utf-8
 __author__ = 'Roman Solovyev (ZFTurbo): https://github.com/ZFTurbo/'
+# using lossless code written by axeldelafosse
 
 import time
 import librosa
@@ -90,6 +91,60 @@ def run_folder(model, args, config, device, verbose: bool = False):
         if args.use_tta:
             waveforms_orig = apply_tta(config, model, mix, waveforms_orig, device, args.model_type)
 
+        # Calculate residual if lossless mode is enabled
+        if args.lossless_advanced or args.lossless:
+            # Step 1: Convert everything to tensors on the right device
+            mix_orig_tensor = torch.tensor(mix_orig, device=device)
+            waveform_tensors = {instr: torch.tensor(waveforms_orig[instr], device=device) for instr in instruments}
+            
+            # Step 2: Calculate what's missing (the residual)
+            sum_stems = sum(waveform_tensors[instr] for instr in instruments)
+            residual = mix_orig_tensor - sum_stems
+            
+            # Step 3: Run the model again on just the residual
+            residual_stems = demix(config, model, residual.cpu().numpy(), device, pbar=detailed_pbar, model_type=args.model_type)
+            residual_stems = {k: torch.tensor(v, device=device) for k, v in residual_stems.items()}
+            
+            # Distribute residual based on model's classification
+            if 'drums' in instruments and 'other' in instruments:
+                # Get drums confidence from model's output
+                drums_ratio = torch.sum(torch.abs(residual_stems['drums'])) / (
+                    torch.sum(torch.abs(residual_stems['drums'])) + torch.sum(torch.abs(residual_stems['other']))
+                )
+                
+                drums_residual = residual_stems['drums']
+                other_residual = residual_stems['other']
+                
+                # Calculate remaining ambiguous content
+                ambiguous_residual = residual - (drums_residual + other_residual)
+                
+                # Add clear content plus drums portion of ambiguous content to drums
+                waveforms_orig['drums'] = (waveform_tensors['drums'] + 
+                                    drums_residual + 
+                                    ambiguous_residual * drums_ratio).cpu().numpy()
+                
+                if args.lossless_advanced:
+                    # Advanced mode: Keep other stem unchanged and create separate residual stems
+                    waveforms_orig['other'] = waveform_tensors['other'].cpu().numpy()
+                    waveforms_orig['residual_other'] = other_residual.cpu().numpy()
+                    waveforms_orig['residual_ambiguous'] = (ambiguous_residual * (1 - drums_ratio)).cpu().numpy()
+                    
+                    # Add residual stems to instruments list so they get saved
+                    if 'residual_other' not in instruments:
+                        instruments.append('residual_other')
+                    if 'residual_ambiguous' not in instruments:
+                        instruments.append('residual_ambiguous')
+                else:
+                    # Standard lossless mode: Add both other residual and ambiguous residual to other stem
+                    waveforms_orig['other'] = (waveform_tensors['other'] + 
+                                        other_residual + 
+                                        ambiguous_residual * (1 - drums_ratio)).cpu().numpy()
+            
+            elif instruments:
+                # Fallback: add to first stem if neither drums nor other exists
+                first_stem = instruments[0]
+                waveforms_orig[first_stem] = (waveform_tensors[first_stem] + residual).cpu().numpy()
+
         if args.extract_instrumental:
             instr = 'vocals' if 'vocals' in instruments else instruments[0]
             waveforms_orig['instrumental'] = mix_orig - waveforms_orig[instr]
@@ -131,6 +186,10 @@ def proc_folder(dict_args):
         device = "mps"
 
     print("Using device: ", device)
+    if args.lossless_advanced:
+        print("Lossless mode: advanced (separate residual stems)")
+    elif args.lossless:
+        print("Lossless mode: standard (residual added to other stem)")
 
     model_load_start_time = time.time()
     torch.backends.cudnn.benchmark = True

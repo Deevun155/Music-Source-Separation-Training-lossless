@@ -1,6 +1,55 @@
 # Music Source Separation Universal Training Code
 
-Repository for training models for music source separation. Repository is based on [kuielab code](https://github.com/kuielab/sdx23/tree/mdx_AB/my_submission/src) for [SDX23 challenge](https://github.com/kuielab/sdx23/tree/mdx_AB/my_submission/src). The main idea of this repository is to create training code, which is easy to modify for experiments. Brought to you by [MVSep.com](https://mvsep.com).
+Repository for training models for music source separation. Repository is based on [kuielab code](https://github.com/kuielab/sdx23/tree/mdx_AB/my_submission/src) for [SDX23 challenge](https://github.com/kuielab/sdx23/tree/mdx_AB/my_submission/src). The main idea of this repository is to create training code, which is easy to modify for experiments. Original script created by ZFTurbo of [MVSep.com](https://mvsep.com). This fork has been modified with an inference script that supports the `--lossless` command, using an implementation developed by [axeldelafosse](https://github.com/axeldelafosse/BS-RoFormer) and modified by me.
+
+## Lossless mode
+
+The `--lossless` flag (default disabled) enables perfect reconstruction of the original mix by intelligently distributing any residual content back into the stems. This ensures that when all stems are summed together, they exactly match the input mix.
+
+By default, music source separation can be slightly lossy -- the sum of the separated stems may not perfectly equal the original mix due to model limitations. The lossless mode addresses this by:
+
+1. Calculating the residual (difference between original mix and sum of stems)
+2. Running the model again on this residual to classify its content
+3. Using a hybrid approach to distribute the residual:
+   - Clear drum/percussion content goes to the drums stem
+   - Clear musical/harmonic content goes to the other stem
+   - Ambiguous content is distributed proportionally based on the energy ratio
+
+This results in:
+
+- Perfect reconstruction when stems are summed
+- Musically appropriate distribution of residual content
+- Minimal impact on separation quality of primary elements
+
+## Advanced Lossless mode
+
+The `--lossless_advanced` flag does the same thing as the standard `--lossless` flag but differs in step 3. Clear drum/percussion content still goes into the drums stem, but different parts of the residual (harmonic content and ambiguous content) are given their new stems: `residual_other` and `residual_ambiguous`. The means that the `other` stem is untouched from the original model output. This means the user gets to decide what to do with the residual content.
+
+This results in:
+
+- Perfect reconstruction when stems are summed (including both residual stems)
+- An untouched `other` stem
+  - Useful if the user needs the content in the original stem
+- User's choice for the residual content
+  - Useful if (for example) most of the harmonic residual is a guitar or piano, and the ambiguous content is just distortion
+- Minimal impact on separation quality of primary elements
+
+
+### Usage
+
+To use lossless mode, simply add the `--lossless` flag to your command:
+
+```bash
+python inference.py \
+    --model_type bs_roformer \
+    --config_path configs/bs_roformer.yaml \
+    --start_check_point results/bs_roformer.ckpt \
+    --input_folder input/ \
+    --store_dir separation_results/ \
+    --lossless
+```
+
+Note that this will run the model twice, so it will be 2x slower than the default mode.
 
 ## Models
 

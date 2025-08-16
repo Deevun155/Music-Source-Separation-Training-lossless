@@ -159,6 +159,8 @@ def parse_args_inference(dict_args: Union[Dict, None]) -> argparse.Namespace:
     parser.add_argument("--use_tta", action='store_true',
                         help="Flag adds test time augmentation during inference (polarity and channel inverse)."
                         "While this triples the runtime, it reduces noise and slightly improves prediction quality.")
+    parser.add_argument("--lossless", action='store_true', help="Enable lossless mode - adds residual difference back to drums/other stems to preserve all audio content")
+    parser.add_argument("--lossless_advanced", action='store_true', help="Enable advanced lossless mode - creates separate residual_other and residual_ambiguous stems for maximum transparency")
     parser.add_argument("--lora_checkpoint", type=str, default='', help="Initial checkpoint to LoRA weights")
 
     if dict_args is not None:
