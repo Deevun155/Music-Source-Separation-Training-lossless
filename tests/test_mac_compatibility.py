@@ -8,10 +8,7 @@ This test suite verifies that the code handles different platforms correctly.
 import platform
 import subprocess
 import sys
-import os
-
-# Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from pathlib import Path
 
 
 def test_platform_detection():
@@ -39,27 +36,24 @@ def test_open_folder_logic():
 
 def test_requirements_files_exist():
     """Test that both requirements files exist"""
-    base_path = os.path.dirname(os.path.dirname(__file__))
+    base_path = Path(__file__).parent.parent
     
-    req_main = os.path.join(base_path, 'requirements.txt')
-    req_opt = os.path.join(base_path, 'requirements-optional.txt')
+    req_main = base_path / 'requirements.txt'
+    req_opt = base_path / 'requirements-optional.txt'
     
-    assert os.path.exists(req_main), "requirements.txt not found"
+    assert req_main.exists(), "requirements.txt not found"
     print("✓ requirements.txt exists")
     
-    assert os.path.exists(req_opt), "requirements-optional.txt not found"
+    assert req_opt.exists(), "requirements-optional.txt not found"
     print("✓ requirements-optional.txt exists")
 
 
 def test_optional_deps_separated():
     """Test that optional dependencies are properly separated"""
-    base_path = os.path.dirname(os.path.dirname(__file__))
+    base_path = Path(__file__).parent.parent
     
-    with open(os.path.join(base_path, 'requirements.txt'), 'r') as f:
-        main_reqs = f.read()
-    
-    with open(os.path.join(base_path, 'requirements-optional.txt'), 'r') as f:
-        opt_reqs = f.read()
+    main_reqs = (base_path / 'requirements.txt').read_text()
+    opt_reqs = (base_path / 'requirements-optional.txt').read_text()
     
     # Check that problematic packages are in optional, not main
     assert 'pyaudio' not in main_reqs, "pyaudio should be in requirements-optional.txt"
@@ -78,10 +72,9 @@ def test_optional_deps_separated():
 
 def test_readme_has_platform_info():
     """Test that README documents platform compatibility"""
-    base_path = os.path.dirname(os.path.dirname(__file__))
+    base_path = Path(__file__).parent.parent
     
-    with open(os.path.join(base_path, 'README.md'), 'r') as f:
-        readme = f.read()
+    readme = (base_path / 'README.md').read_text()
     
     # Check for key platform-related content
     assert 'Platform Compatibility' in readme or 'macOS' in readme or 'Mac' in readme, \
@@ -95,10 +88,9 @@ def test_readme_has_platform_info():
 
 def test_gui_has_dependency_check():
     """Test that GUI file has dependency check"""
-    base_path = os.path.dirname(os.path.dirname(__file__))
+    base_path = Path(__file__).parent.parent
     
-    with open(os.path.join(base_path, 'gui', 'gui-wx.py'), 'r') as f:
-        gui_code = f.read()
+    gui_code = (base_path / 'gui' / 'gui-wx.py').read_text()
     
     # Check that it handles missing wx gracefully
     assert 'try:' in gui_code and 'import wx' in gui_code, \
@@ -113,10 +105,9 @@ def test_gui_has_dependency_check():
 
 def test_stream_has_dependency_check():
     """Test that stream script has dependency check"""
-    base_path = os.path.dirname(os.path.dirname(__file__))
+    base_path = Path(__file__).parent.parent
     
-    with open(os.path.join(base_path, 'scripts', 'stream.py'), 'r') as f:
-        stream_code = f.read()
+    stream_code = (base_path / 'scripts' / 'stream.py').read_text()
     
     # Check that it handles missing pyaudio/keyboard gracefully
     assert 'PYAUDIO_AVAILABLE' in stream_code or 'try:' in stream_code, \

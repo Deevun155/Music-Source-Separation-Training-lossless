@@ -66,9 +66,11 @@ def open_store_folder(folder_path):
             if system == 'Windows':
                 os.startfile(folder_path)
             elif system == 'Darwin':  # macOS
-                subprocess.run(['open', folder_path])
+                subprocess.run(['open', folder_path], check=True)
             else:  # Linux and other Unix-like systems
-                subprocess.run(['xdg-open', folder_path])
+                subprocess.run(['xdg-open', folder_path], check=True)
+        except subprocess.CalledProcessError as e:
+            wx.MessageBox(f"Could not open folder: Command failed with return code {e.returncode}", "Error", wx.OK | wx.ICON_ERROR)
         except Exception as e:
             wx.MessageBox(f"Could not open folder: {str(e)}", "Error", wx.OK | wx.ICON_ERROR)
     else:

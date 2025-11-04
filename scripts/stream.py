@@ -33,25 +33,28 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.model_utils import load_start_checkpoint, demix, apply_tta
 from utils.settings import get_model_from_config
 
-# Check for required dependencies
-if not PYAUDIO_AVAILABLE or not KEYBOARD_AVAILABLE:
-    missing = []
-    if not PYAUDIO_AVAILABLE:
-        missing.append("pyaudio")
-    if not KEYBOARD_AVAILABLE:
-        missing.append("keyboard")
-    print(f"\nError: Missing required dependencies for real-time streaming: {', '.join(missing)}")
-    print("Please install them with: pip install -r requirements-optional.txt")
-    print("\nNote: These packages may have installation issues on some platforms (especially macOS).")
-    print("For macOS users, you may need to install PortAudio first:")
-    print("  brew install portaudio")
-    print("  pip install pyaudio")
-    sys.exit(1)
-
+# Define constants (will be None if pyaudio not available)
 RATE: int = 44100  # Sampling rate (44.1 kHz)
-FORMAT: int = pyaudio.paFloat32  # Audio format
+FORMAT: int = pyaudio.paFloat32 if PYAUDIO_AVAILABLE else None  # Audio format
 
 base_dir = str(os.path.dirname(os.path.abspath(__file__)))
+
+
+def check_dependencies():
+    """Check for required dependencies and exit with helpful message if missing."""
+    if not PYAUDIO_AVAILABLE or not KEYBOARD_AVAILABLE:
+        missing = []
+        if not PYAUDIO_AVAILABLE:
+            missing.append("pyaudio")
+        if not KEYBOARD_AVAILABLE:
+            missing.append("keyboard")
+        print(f"\nError: Missing required dependencies for real-time streaming: {', '.join(missing)}")
+        print("Please install them with: pip install -r requirements-optional.txt")
+        print("\nNote: These packages may have installation issues on some platforms (especially macOS).")
+        print("For macOS users, you may need to install PortAudio first:")
+        print("  brew install portaudio")
+        print("  pip install pyaudio")
+        sys.exit(1)
 
 def parse_args(dict_args: Union[Dict[str, Any], None]) -> argparse.Namespace:
     """
@@ -346,6 +349,9 @@ async def type_2_main(args: argparse.Namespace, device: str, model: nn.Module, c
 
 
 if __name__ == "__main__":
+    # Check dependencies before proceeding
+    check_dependencies()
+    
     args = parse_args(None)
     args.config_path = str(os.path.abspath(os.path.join(base_dir, '..', args.config_path)))
     args.start_check_point = str(os.path.abspath(os.path.join(base_dir, '..', args.start_check_point)))
