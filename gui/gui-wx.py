@@ -1,7 +1,27 @@
-import wx
-import wx.adv
-import wx.html
-import wx.html2
+#!/usr/bin/env python3
+"""
+GUI for Music Source Separation Training
+Requires wxPython - install with: pip install -r requirements-optional.txt
+"""
+
+try:
+    import wx
+    import wx.adv
+    import wx.html
+    import wx.html2
+except ImportError:
+    print("\nError: wxPython is not installed.")
+    print("This GUI requires wxPython. Install it with:")
+    print("  pip install -r requirements-optional.txt")
+    print("\nNote: wxPython may have installation issues on some platforms (especially macOS).")
+    print("For macOS users, you may need to install wxPython from wheel:")
+    print("  pip install -U wxPython")
+    print("\nAlternatively, use the command-line interface instead:")
+    print("  python inference.py --help")
+    print("  python train.py --help")
+    import sys
+    sys.exit(1)
+
 import subprocess
 import os
 import threading
@@ -10,6 +30,7 @@ import json
 import webbrowser
 import requests
 import sys
+import platform
 
 def run_subprocess(cmd, output_queue):
     try:
@@ -40,7 +61,16 @@ def update_output(output_text, output_queue):
 
 def open_store_folder(folder_path):
     if os.path.exists(folder_path):
-        os.startfile(folder_path)
+        system = platform.system()
+        try:
+            if system == 'Windows':
+                os.startfile(folder_path)
+            elif system == 'Darwin':  # macOS
+                subprocess.run(['open', folder_path])
+            else:  # Linux and other Unix-like systems
+                subprocess.run(['xdg-open', folder_path])
+        except Exception as e:
+            wx.MessageBox(f"Could not open folder: {str(e)}", "Error", wx.OK | wx.ICON_ERROR)
     else:
         wx.MessageBox(f"The folder {folder_path} does not exist.", "Error", wx.OK | wx.ICON_ERROR)
 

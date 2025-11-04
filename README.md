@@ -2,6 +2,28 @@
 
 Repository for training models for music source separation. Repository is based on [kuielab code](https://github.com/kuielab/sdx23/tree/mdx_AB/my_submission/src) for [SDX23 challenge](https://github.com/kuielab/sdx23/tree/mdx_AB/my_submission/src). The main idea of this repository is to create training code, which is easy to modify for experiments. Original script created by ZFTurbo of [MVSep.com](https://mvsep.com). This fork has been modified with an inference script that supports the `--lossless` command, using an implementation developed by [axeldelafosse](https://github.com/axeldelafosse/BS-RoFormer) and modified by me.
 
+## Platform Compatibility
+
+This code works on **Windows, macOS (Mac), and Linux**. The core training and inference functionality is cross-platform compatible.
+
+### Installation
+
+**Basic installation (all platforms):**
+```bash
+pip install -r requirements.txt
+```
+
+**Optional features (GUI and real-time streaming):**
+```bash
+pip install -r requirements-optional.txt
+```
+
+**Note for macOS users:** If you encounter issues installing optional dependencies (pyaudio, keyboard, wxpython), you can skip them if you don't need:
+- Real-time audio streaming (`scripts/stream.py`) - requires pyaudio and keyboard
+- GUI interface (`gui/gui-wx.py`) - requires wxpython
+
+The main training and inference scripts work without these optional dependencies.
+
 ## Lossless mode
 
 The `--lossless` flag (default disabled) enables perfect reconstruction of the original mix by intelligently distributing any residual content back into the stems. This ensures that when all stems are summed together, they exactly match the input mix.

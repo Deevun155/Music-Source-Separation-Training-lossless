@@ -5,14 +5,26 @@ import time
 import numpy as np
 import soundfile as sf
 import torch
-import pyaudio
 from torch import nn
 from typing import Tuple, Any, Union, Dict
 import queue
-import keyboard
 import threading
 import warnings
-import asyncio
+
+# Try to import optional dependencies for streaming
+try:
+    import pyaudio
+    PYAUDIO_AVAILABLE = True
+except ImportError:
+    PYAUDIO_AVAILABLE = False
+    pyaudio = None
+
+try:
+    import keyboard
+    KEYBOARD_AVAILABLE = True
+except ImportError:
+    KEYBOARD_AVAILABLE = False
+    keyboard = None
 
 warnings.filterwarnings("ignore", category=UserWarning, message="TypedStorage is deprecated")
 
@@ -20,6 +32,22 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from utils.model_utils import load_start_checkpoint, demix, apply_tta
 from utils.settings import get_model_from_config
+
+# Check for required dependencies
+if not PYAUDIO_AVAILABLE or not KEYBOARD_AVAILABLE:
+    missing = []
+    if not PYAUDIO_AVAILABLE:
+        missing.append("pyaudio")
+    if not KEYBOARD_AVAILABLE:
+        missing.append("keyboard")
+    print(f"\nError: Missing required dependencies for real-time streaming: {', '.join(missing)}")
+    print("Please install them with: pip install -r requirements-optional.txt")
+    print("\nNote: These packages may have installation issues on some platforms (especially macOS).")
+    print("For macOS users, you may need to install PortAudio first:")
+    print("  brew install portaudio")
+    print("  pip install pyaudio")
+    sys.exit(1)
+
 RATE: int = 44100  # Sampling rate (44.1 kHz)
 FORMAT: int = pyaudio.paFloat32  # Audio format
 

@@ -1,0 +1,9 @@
+# Optional dependencies for additional features
+# These packages may have installation issues on some platforms (especially macOS)
+
+# Required only for real-time audio streaming (scripts/stream.py)
+pyaudio
+keyboard
+
+# Required only for the GUI (gui/gui-wx.py)
+wxpython==4.2.2
