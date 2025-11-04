@@ -6,6 +6,8 @@ Repository for training models for music source separation. Repository is based 
 
 This code works on **Windows, macOS (Mac), and Linux**. The core training and inference functionality is cross-platform compatible.
 
+**📖 For macOS users:** See the detailed [macOS Installation Guide](docs/macos.md) for Mac-specific instructions and troubleshooting.
+
 ### Installation
 
 **Basic installation (all platforms):**
